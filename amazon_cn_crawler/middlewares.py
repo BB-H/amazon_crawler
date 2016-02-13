@@ -1,0 +1,57 @@
+# -*- coding: utf-8 -*-
+from scrapy.http import HtmlResponse
+from scrapy.http import Request
+import os, logging, traceback
+from phantomJsTool import PhantomJS as PhantomJSService
+
+from scrapy.utils.project import get_project_settings
+
+import MySQLdb
+
+SETTINGS = get_project_settings()
+
+class PhantomJSMiddleware(object):
+
+	phantomJSService = PhantomJSService()
+	
+	# overwrite process request  
+	def process_request(self, request, spider):
+		if request.meta.has_key('enablePhantomJS'):# 
+			logging.info('[PID:%s] PhantomJS Requesting: %s' %(os.getpid(),request.url))  
+			content = self.phantomJSService.requestByURL(request.url)
+			if content is None or content.strip()=="" or content == '<html><head></head><body></body></html>':# 
+				logging.debug("[PID:%s] PhantomJS Request failed!" %os.getpid())
+				return HtmlResponse(request.url, encoding = 'utf-8', status = 503, body = '')  
+			else: # 
+				logging.debug("[PID:%s]PhantomJS Request success!" %os.getpid())
+				return HtmlResponse(request.url, encoding = 'utf-8', status = 200, body = content) 
+ 
+
+
+class ItemFilterMiddleware(object):
+	'''
+	This is a spider middleware that is used to filter and drop the request which already exists in DB. 
+	'''
+	TYPE_ITEM_PAGE = "http://item.jd.com"
+	
+	def __init__(self):
+		self.db = MySQLdb.connect(host=SETTINGS['DB_HOST'],
+						user=SETTINGS['DB_USER'],
+						passwd=SETTINGS['DB_PASSWD'],
+						db=SETTINGS['DB_DB'])
+		self.cur = self.db.cursor()
+	
+	def __del__(self):
+		self.db.close()
+	
+	def process_spider_output(self,response, result, spider):
+		for r in result:
+			if isinstance(r,Request) and r.url.startswith(self.TYPE_ITEM_PAGE):
+				sql = "SELECT id from JD_Item where item_link = '%s'" %r.url.strip()
+				self.cur.execute(sql)
+				if len(self.cur.fetchall())==0:
+					yield r
+				else:
+					logging.info('[PID:%s]The URL exists in DB, skip it: %s' %(os.getpid(),r.url))
+			else:
+				yield r
