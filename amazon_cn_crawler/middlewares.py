@@ -3,6 +3,7 @@ from scrapy.http import HtmlResponse
 from scrapy.http import Request
 import os, logging, traceback
 from phantomJsTool import PhantomJS as PhantomJSService
+from amazon_cn_crawler.HttpProxyFactory import HttpProxyFactory
 
 from scrapy.utils.project import get_project_settings
 
@@ -11,20 +12,26 @@ import MySQLdb
 SETTINGS = get_project_settings()
 
 class PhantomJSMiddleware(object):
-
 	phantomJSService = PhantomJSService()
+
+	def __init__(self):
+		self.proxyFactory = HttpProxyFactory.getHttpProxyFactory()
 	
 	# overwrite process request  
 	def process_request(self, request, spider):
-		if request.meta.has_key('enablePhantomJS'):# 
-			logging.info('[PID:%s] PhantomJS Requesting: %s' %(os.getpid(),request.url))  
-			content = self.phantomJSService.requestByURL(request.url)
+		if request.meta.has_key('phantom'):# 
+			logging.info('[PID:%s] PhantomJS Requesting: %s' %(os.getpid(),request.url))
+			#proxyinfo = request.meta['proxy']
+			if request.meta['phantom'].strip()=="proxied" and self.proxyFactory.getValidProxyAmount()>0:
+				content = self.phantomJSService.requestWithProxy(request.url,self.proxyFactory.getRandomProxy())
+			else:
+				content = self.phantomJSService.requestByURL(request.url)
 			if content is None or content.strip()=="" or content == '<html><head></head><body></body></html>':# 
 				logging.debug("[PID:%s] PhantomJS Request failed!" %os.getpid())
 				return HtmlResponse(request.url, encoding = 'utf-8', status = 503, body = '')  
-			else: # 
+			else:
 				logging.debug("[PID:%s]PhantomJS Request success!" %os.getpid())
-				return HtmlResponse(request.url, encoding = 'utf-8', status = 200, body = content) 
+				return HtmlResponse(request.url, encoding = 'utf-8', status = 200, body = content)
  
 
 

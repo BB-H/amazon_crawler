@@ -37,7 +37,7 @@ class AmazonItem(scrapy.Item):
 	
 	def __str__(self):
 		#return "name=%s,\n amazon_id=%s,\n price=%s,\n additionalCharge=%s,\n overseaProduct = %s,\n thirdParty=%s,\n itemLink=%s,\n pictureURL=%s" %(self.name,self.amazon_id,self.price,self.additionalCharge,self.overseaProduct,self.thirdParty,self.itemLink,self.pictureURL)
-		return "name=%s,\n amazon_id=%s,\n price=%s,\n additionalCharge=%s,\n overseaProduct = %s,\n thirdParty=%s,\n itemLink=%s,\n pictureURL=%s" %(self['name'],self['amazon_id'],self['price'],self['additionalCharge'],self['overseaProduct'],self['thirdParty'],self['itemLink'],self['pictureURL'])
+		return "name=%s,\n amazon_id=%s,\n price=%s,\n additionalCharge=%s,\n overseaProduct = %s,\n thirdParty=%s,\n itemLink=%s,\n pictureURL=%s" %(self['name'],self['amazon_id'],self['price'],self['additionalCharge'],self['overseaProduct'],self['thirdParty'],str(self['itemLink']),str(self['pictureURL']))
 	
 	def __repr__(self):
 		self.__str__()
