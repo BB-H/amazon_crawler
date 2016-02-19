@@ -84,7 +84,7 @@ class AmazonCnSpider(scrapy.Spider):
 			nameNodes = resp.xpath('//*[@id="productTitle"]/text()')
 			if nameNodes is None or len(nameNodes)<1:
 				nameNodes = resp.xpath('//*[@id="btAsinTitle"]/span/text()')
-			name = nameNodes[0].extract().encode('utf-8')
+			name = nameNodes[0].extract().encode('utf-8').strip()
 			amazon_id = resp.url.replace(self.TYPE_ITEM_PAGE,"",1)
 			# TODO:price, additionalCharge, overSeaProduct,thirdParty
 			price = ""
@@ -165,5 +165,5 @@ class AmazonCnSpider(scrapy.Spider):
 			'''
 			item = AmazonItem()
 			item.setAttributes(name,amazon_id,price,additionalCharge,overSeaProduct,thirdParty,itemLink,pictureURL)
-			logging.debug("Found amazon item:\n"+str(item))
+			logging.debug("Found amazon item:\n%s" %(item.toString()))
 			yield item

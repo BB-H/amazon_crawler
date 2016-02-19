@@ -13,7 +13,7 @@ class HttpProxyFactory(object):
 	
 	TEST_PAGE_BING = "http://cn.bing.com/"
 	TEST_PAGE_AMAZON = "http://www.amazon.cn/gp/site-directory"
-	MAX_THREAD = 48
+	MAX_THREAD = 100
 	allProxySet=set([#This is just an example, allProxySet will be restructured from proxy.list file in __init__()
 		"23.94.37.50:3128",
 		#"121.193.143.249:80",
@@ -68,7 +68,7 @@ class HttpProxyFactory(object):
 				urllib2.install_opener(opener)
 				req=urllib2.Request(HttpProxyFactory.TEST_PAGE_AMAZON)
 				req.add_header('Cache-Control', 'max-age=0')
-				response = urllib2.urlopen(req,timeout=2)
+				response = urllib2.urlopen(req,timeout=1.5)
 				html = response.read()
 				if html.find('id="nav-logo"')<0 and html.find("id='nav-logo'")<0: #amazon.cn login element
 					return

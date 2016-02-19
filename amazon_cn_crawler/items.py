@@ -35,9 +35,10 @@ class AmazonItem(scrapy.Item):
 		self['pictureURL'] = pictureURL
 	
 	
-	def __str__(self):
+	#def __str__(self):
+	def toString(self):
 		#return "name=%s,\n amazon_id=%s,\n price=%s,\n additionalCharge=%s,\n overseaProduct = %s,\n thirdParty=%s,\n itemLink=%s,\n pictureURL=%s" %(self.name,self.amazon_id,self.price,self.additionalCharge,self.overseaProduct,self.thirdParty,self.itemLink,self.pictureURL)
-		return "name=%s,\n amazon_id=%s,\n price=%s,\n additionalCharge=%s,\n overseaProduct = %s,\n thirdParty=%s,\n itemLink=%s,\n pictureURL=%s" %(self['name'],self['amazon_id'],self['price'],self['additionalCharge'],self['overseaProduct'],self['thirdParty'],str(self['itemLink']),str(self['pictureURL']))
+		return "name=%s \namazon_id=%s \nprice=%s \nadditionalCharge=%s \noverseaProduct = %s \nthirdParty=%s \nitemLink=%s \npictureURL=%s \n" %(self['name'],self['amazon_id'],self['price'],self['additionalCharge'],self['overseaProduct'],self['thirdParty'],self['itemLink'],self['pictureURL'])
 	
-	def __repr__(self):
-		self.__str__()
+	#def __repr__(self):
+	#	self.__str__()

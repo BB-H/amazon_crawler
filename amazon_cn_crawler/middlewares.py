@@ -39,13 +39,15 @@ class ItemFilterMiddleware(object):
 	'''
 	This is a spider middleware that is used to filter and drop the request which already exists in DB. 
 	'''
-	TYPE_ITEM_PAGE = "http://item.jd.com"
+	TYPE_ITEM_PAGE = "http://www.amazon.cn/dp/" # "http://www.amazon.cn/dp/<ID>"
 	
 	def __init__(self):
 		self.db = MySQLdb.connect(host=SETTINGS['DB_HOST'],
 						user=SETTINGS['DB_USER'],
 						passwd=SETTINGS['DB_PASSWD'],
-						db=SETTINGS['DB_DB'])
+						db=SETTINGS['DB_DB'],
+						charset = "utf8"
+						)
 		self.cur = self.db.cursor()
 	
 	def __del__(self):
@@ -54,11 +56,11 @@ class ItemFilterMiddleware(object):
 	def process_spider_output(self,response, result, spider):
 		for r in result:
 			if isinstance(r,Request) and r.url.startswith(self.TYPE_ITEM_PAGE):
-				sql = "SELECT id from JD_Item where item_link = '%s'" %r.url.strip()
-				self.cur.execute(sql)
+				sql = "SELECT id from amazon_item where item_link = %s"
+				self.cur.execute(sql, (r.url.strip(),))
 				if len(self.cur.fetchall())==0:
 					yield r
 				else:
-					logging.info('[PID:%s]The URL exists in DB, skip it: %s' %(os.getpid(),r.url))
+					logging.info('The URL exists in DB, skip it: %s' %r.url)
 			else:
 				yield r
