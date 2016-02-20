@@ -59,13 +59,15 @@ class MySQLPipeline(object):
 		res = tx.execute(sql,(item['amazon_id'],))
 		if res == 0:
 			logging.debug("Insert Amazon item (amazon_id=%s)." %item['amazon_id'])
+			#1. Insert item into amamzon_item
 			sql = "INSERT INTO \
-						amazon_item (name,amazon_id,price,additional_charge,oversea_product,third_party,item_link,picture_url) \
-						VALUES (%s,%s,%s,%s,%s,%s,%s,%s)"
+						amazon_item (name,amazon_id,amazon_category_id,price,additional_charge,oversea_product,third_party,item_link,picture_url) \
+						VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)"
 						
 			result = tx.execute(sql,(
 									item['name'],
 									item['amazon_id'],
+									item['category_id'],
 									item['price'],
 									item['additionalCharge'],
 									item['overseaProduct'],
@@ -74,8 +76,29 @@ class MySQLPipeline(object):
 									item['pictureURL'],
 									)
 								)
-			if result > 0:
-				self.stats.inc_value('database/items_added')
+			#2. Insert category into amazon_category if it's not existed
+			categoryInfoList = item['categoryPathInfo']
+			catIDs = (catID for (_,catID) in categoryInfoList)
+			sql = "SELECT distinct(amazon_category_id) from amazon_category where amazon_category_id in ("
+			for _ in categoryInfoList:
+				sql=sql+"%s,"
+			sql = sql[0:len(sql)-1]+")"
+			tx.execute(sql,catIDs)
+			results = tx.fetchall()
+			existedCatIDs = [row['amazon_category_id'].encode('utf-8') for row in results]
+			
+			sql = "insert into amazon_category (name,amazon_category_id,parent_category_id,category_path,category_display_path) values (%s,%s,%s,%s,%s)"
+			category_path_nodes = []
+			display_path_nodes = []
+			parentCategoryID = ""
+			for (catName,catID) in categoryInfoList:
+				category_path_nodes.append(catID)
+				display_path_nodes.append(catName)
+				if not existedCatIDs.__contains__(catID):
+					tx.execute(sql,(catName,catID,parentCategoryID,",".join(category_path_nodes),">".join(display_path_nodes)))
+				parentCategoryID = catID
+
+			self.stats.inc_value('database/items_added')
 		else:
 			logging.debug("Duplicated item(amazon_id=%s), ignore it!" %item['amazon_id'])
 		

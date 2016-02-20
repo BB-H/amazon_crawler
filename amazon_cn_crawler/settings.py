@@ -23,9 +23,9 @@ NEWSPIDER_MODULE = 'amazon_cn_crawler.spiders'
 ###### DB config ######
 DB_HOST = 'localhost'
 DB_PORT = 3306
-DB_USER = 'abc'
-DB_PASSWD = '123'
-DB_DB = 'abc'
+DB_USER = 'xx'
+DB_PASSWD = 'xx'
+DB_DB = 'xx'
 
 
 
