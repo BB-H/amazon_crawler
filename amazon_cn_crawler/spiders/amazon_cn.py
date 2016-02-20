@@ -99,6 +99,8 @@ class AmazonCnSpider(scrapy.Spider):
 				nodes = resp.xpath('//*[@id and re:test(@id,"a-autoid-\d+-announce")]')
 				if len(nodes)>0:
 					priceNodes = nodes.xpath('./span[@class="a-color-base"]/span/text()')
+			if len(priceNodes)<1:
+				priceNodes = resp.xpath('//*[@id="soldByThirdParty"]/span[2]/text()')
 			
 			if len(priceNodes)>0:
 					priceString = priceNodes[0].extract().encode('utf-8')
