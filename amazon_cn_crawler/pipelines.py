@@ -78,7 +78,8 @@ class MySQLPipeline(object):
 								)
 			#2. Insert category into amazon_category if it's not existed
 			categoryInfoList = item['categoryPathInfo']
-			catIDs = (catID for (_,catID) in categoryInfoList)
+			catIDs = [catID for (_,catID) in categoryInfoList]
+			catIDs = tuple(catIDs)
 			sql = "SELECT distinct(amazon_category_id) from amazon_category where amazon_category_id in ("
 			for _ in categoryInfoList:
 				sql=sql+"%s,"
