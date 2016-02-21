@@ -23,9 +23,9 @@ NEWSPIDER_MODULE = 'amazon_cn_crawler.spiders'
 ###### DB config ######
 DB_HOST = 'localhost'
 DB_PORT = 3306
-DB_USER = 'xx'
-DB_PASSWD = 'xx'
-DB_DB = 'xx'
+DB_USER = 'xxx'
+DB_PASSWD = 'xxx'
+DB_DB = 'xxx'
 
 
 
@@ -81,7 +81,10 @@ SPIDER_MIDDLEWARES = {
 DOWNLOADER_MIDDLEWARES = {
 #    'mybid.middlewares.MyCustomDownloaderMiddleware': 543,
      'amazon_cn_crawler.middlewares.PhantomJSMiddleware':520,
+     #'amazon_cn_crawler.middlewares.RandomUserAgentMiddleware': 400, # enable random user-agent, all user agents define in 'USER_AGENT_LIST'
 }
+
+#USER_AGENT_LIST = "./amazon_cn_crawler/useragents.txt"
 
 # Enable or disable extensions
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
@@ -114,7 +117,7 @@ ITEM_PIPELINES = {
 #HTTPCACHE_IGNORE_HTTP_CODES=[]
 #HTTPCACHE_STORAGE='scrapy.extensions.httpcache.FilesystemCacheStorage'
 
-
+'''
 configure_logging(install_root_handler=False)
 logging.basicConfig(
     filename='z.log',
@@ -125,6 +128,5 @@ logging.basicConfig(
 log_name = 'z.log'
 logging.basicConfig(filename=log_name)
 log = logging.getLogger()
-handler = RotatingFileHandler(log_name,maxBytes=3*1024*1024,backupCount=5)
+handler = RotatingFileHandler(log_name,maxBytes=20*1024*1024,backupCount=5)
 log.addHandler(handler)
-'''

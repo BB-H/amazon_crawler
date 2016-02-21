@@ -29,6 +29,7 @@ class AmazonCnSpider(scrapy.Spider):
 	def __init__(self):
 		self.proxyFactory = HttpProxyFactory.getHttpProxyFactory()
 		self.pattern_categoryID = re.compile("node=[0-9]+")
+		self.pattern_bookWrapper = re.compile("《.+》")
 		if self.proxyFactory.getValidProxyAmount()>0:
 			self.proxyEnbaled = True
 		else:
@@ -82,10 +83,27 @@ class AmazonCnSpider(scrapy.Spider):
 								req.meta['proxy'] = proxyinfo
 						yield req
 		if resp.url.startswith(self.TYPE_ITEM_PAGE):
-			nameNodes = resp.xpath('//*[@id="productTitle"]/text()')
-			if nameNodes is None or len(nameNodes)<1:
-				nameNodes = resp.xpath('//*[@id="btAsinTitle"]/span/text()')
-			name = nameNodes[0].extract().encode('utf-8').strip()
+			name =""
+			nameNodes = resp.xpath('//*[@id="productTitle"]/text()') or resp.xpath('//*[@id="btAsinTitle"]/span/text()')
+			if nameNodes:
+				name = nameNodes[0].extract().encode('utf-8').strip()
+			if not name:
+				nameNodes = resp.xpath('//*[@id="divsinglecolumnminwidth"]/div[1]/text()')
+				if nameNodes:
+					name = nameNodes[0].extract().encode('utf-8').strip()
+					match = self.pattern_bookWrapper.search(name)
+					name = match.group()
+			if not name:
+				title = resp.xpath('/html/head/title/text()')[0].extract().encode('utf-8').strip()
+				match = self.pattern_bookWrapper.search(title)# search 《xxxxx》
+				if match:
+					name = match.group()
+				if not name:
+					p = re.compile("-Kindle商店-亚马逊中国|亚马逊中国")
+					name = p.sub("",title)
+
+			
+			
 			amazon_id = resp.url.replace(self.TYPE_ITEM_PAGE,"",1)
 			# TODO:price, additionalCharge, overSeaProduct,thirdParty
 			price = ""
