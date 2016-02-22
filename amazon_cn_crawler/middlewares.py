@@ -56,8 +56,8 @@ class PhantomJSMiddleware(object):
 			logging.info('[PID:%s] PhantomJS Requesting: %s' %(os.getpid(),request.url))
 			#proxyinfo = request.meta['proxy']
 			if request.meta['phantom']:
-				proxy = request.meta['phantom_proxy'].strip()
-				if proxy:
+				if request.meta.has_key('phantom_proxy'):
+					proxy = request.meta['phantom_proxy'].strip()
 					content = self.phantomJSService.requestWithProxy(request.url,proxy)
 				else:
 					content = self.phantomJSService.requestByURL(request.url)
