@@ -68,7 +68,7 @@ class HttpProxyFactory(object):
 				urllib2.install_opener(opener)
 				req=urllib2.Request(HttpProxyFactory.TEST_PAGE_AMAZON)
 				req.add_header('Cache-Control', 'max-age=0')
-				response = urllib2.urlopen(req,timeout=1.8)
+				response = urllib2.urlopen(req,timeout=1.5)
 				html = response.read()
 				if html.find('id="nav-logo"')<0 and html.find("id='nav-logo'")<0: #amazon.cn login element
 					return
@@ -108,8 +108,14 @@ class HttpProxyFactory(object):
 
 
 if __name__ == '__main__':
-	factory = HttpProxyFactory()
-
+	#factory = HttpProxyFactory()
+	
+	
+	f = file('valid-proxy.list','w')
+	f.writelines("\n".join(HttpProxyFactory.getHttpProxyFactory().validProxyList))
+	f.close()
+	
+	'''
 	i=1
 	for info in HttpProxyFactory.validProxyList:
 		print "Output with proxy:"+info
@@ -124,6 +130,7 @@ if __name__ == '__main__':
 		f.write(cont)
 		f.close()
 		i+=1
+	'''
 	#for proxy in factory.allProxySet:
 	#	a = threading.Thread(None, factory.is_OK, None, (proxy,), None)
 	#	a.start()

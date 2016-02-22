@@ -47,15 +47,20 @@ class PhantomJSMiddleware(object):
 	phantomJSService = PhantomJSService()
 
 	def __init__(self):
-		self.proxyFactory = HttpProxyFactory.getHttpProxyFactory()
+		#self.proxyFactory = HttpProxyFactory.getHttpProxyFactory()
+		pass
 	
 	# overwrite process request  
 	def process_request(self, request, spider):
 		if request.meta.has_key('phantom'):# 
 			logging.info('[PID:%s] PhantomJS Requesting: %s' %(os.getpid(),request.url))
 			#proxyinfo = request.meta['proxy']
-			if request.meta['phantom'].strip()=="proxied" and self.proxyFactory.getValidProxyAmount()>0:
-				content = self.phantomJSService.requestWithProxy(request.url,self.proxyFactory.getRandomProxy())
+			if request.meta['phantom']:
+				proxy = request.meta['phantom_proxy'].strip()
+				if proxy:
+					content = self.phantomJSService.requestWithProxy(request.url,proxy)
+				else:
+					content = self.phantomJSService.requestByURL(request.url)
 			else:
 				content = self.phantomJSService.requestByURL(request.url)
 			if content is None or content.strip()=="" or content == '<html><head></head><body></body></html>':# 
