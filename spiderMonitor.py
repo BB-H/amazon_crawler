@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 import os,time
 #from collections import deque
-import subprocess
+import subprocess,signal,contextlib,warnings
 import logging
 import time
 
-SPIDER_AMOUNT = 2
+SPIDER_AMOUNT = 4
 MAX_FAILURE = 10
 process_list = []
 processDict = {}
@@ -30,8 +30,8 @@ logger.addHandler(fh)
 logger.addHandler(ch)  
 
 for i in range(0,SPIDER_AMOUNT):
-	logger.info('[%s/%s]Open a spider..' %(i+1,SPIDER_AMOUNT))
-	p = subprocess.Popen("scrapy crawl amazon_cn",shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+	p = subprocess.Popen("scrapy crawl amazon_cn",shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,preexec_fn=os.setsid)
+	logger.info('[%s/%s]Open a spider[PID:%s]..' %(i+1,SPIDER_AMOUNT,p.pid))
 	#process_list.append(p)
 	processDict[p] = 0
 
@@ -44,20 +44,28 @@ while True:
 		if line != '' or p.poll() == None:# 进程还没有结束
 			#check the line
 			if line.find('IndexError: list index out of range')>=0:
-				logger.debug('Find an error with PID:%s' %p.pid)
 				processDict[p]=processDict[p]+1
+				logger.debug('Find an error with PID:%s, failure times:%s/%s' %(p.pid,processDict[p],MAX_FAILURE))
 				if processDict[p]>=MAX_FAILURE:
 					logger.info('KILL a process [PID:%s]' %p.pid)
 					p.terminate()
+					p.wait()
+					try:
+						os.killpg(p.pid, signal.SIGTERM)
+					except OSError as e:
+						logger.error(e)
 					del processDict[p]
-					newP = subprocess.Popen("scrapy crawl amazon_cn",shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+					newP = subprocess.Popen("scrapy crawl amazon_cn",shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,preexec_fn=os.setsid)
 					processDict[newP] = 0
 					logger.info('Renew a process [PID:%s]' %newP.pid)
 		else:
+			pass
+			'''
 			del processDict[p]
-			newP = subprocess.Popen("scrapy crawl amazon_cn",shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+			newP = subprocess.Popen("scrapy crawl amazon_cn",shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,preexec_fn=os.setsid)
 			processDict[newP] = 0
 			logger.info('PID(%s) is killed, renew a process [PID:%s]' %(p.pid,newP.pid))
+			'''
 	i+=1
 	if i>10000:
 		i=0
