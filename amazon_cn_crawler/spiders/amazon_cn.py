@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import scrapy
-import re
+import re,os
 import json
 import logging
 from amazon_cn_crawler.items import AmazonItem
@@ -30,11 +30,12 @@ class AmazonCnSpider(scrapy.Spider):
 		self.proxyFactory = HttpProxyFactory.getHttpProxyFactory()
 		self.pattern_categoryID = re.compile("node=[0-9]+")
 		self.pattern_bookWrapper = re.compile("《.+》")
+		logging.info("All proxy amount is:%s" %self.proxyFactory.getValidProxyAmount())
 		if self.proxyFactory.getValidProxyAmount()>0:
 			self.proxyEnbaled = True
 			self.proxyinfo = self.proxyFactory.getRandomProxy()
 			self.proxyinfo="http://"+self.proxyinfo
-			logging.info("Set Http proxy:%s" %self.proxyinfo)
+			logging.info("[PID:%s] Use Http proxy:%s" %(os.getpid(),self.proxyinfo))
 		else:
 			self.proxyEnbaled = False
 	
@@ -106,7 +107,8 @@ class AmazonCnSpider(scrapy.Spider):
 			amazon_id = resp.url.replace(self.TYPE_ITEM_PAGE,"",1)
 			# TODO:price, additionalCharge, overSeaProduct,thirdParty
 			price = ""
-			pricePattern = re.compile("\d+\.?\d*")
+			#pricePattern = re.compile("\d+\.?\d*")
+			pricePattern = re.compile('\d+(,\d\d\d)*.\d+') #example:￥12,500.99
 			priceNodes = resp.xpath('//*[@id="priceblock_ourprice"]/text()') 
 			if len(priceNodes)<1:
 				priceNodes = resp.xpath('//*[@id="priceblock_saleprice"]/text()')

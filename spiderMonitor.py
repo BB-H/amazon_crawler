@@ -5,9 +5,8 @@ import subprocess,signal,contextlib,warnings
 import logging
 import time
 
-SPIDER_AMOUNT = 4
-MAX_FAILURE = 10
-process_list = []
+SPIDER_AMOUNT = 1
+MAX_FAILURE =3 
 processDict = {}
 ISOTIMEFORMAT='%Y-%m-%d %X'
 
@@ -32,18 +31,19 @@ logger.addHandler(ch)
 for i in range(0,SPIDER_AMOUNT):
 	p = subprocess.Popen("scrapy crawl amazon_cn",shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,preexec_fn=os.setsid)
 	logger.info('[%s/%s]Open a spider[PID:%s]..' %(i+1,SPIDER_AMOUNT,p.pid))
-	#process_list.append(p)
 	processDict[p] = 0
 
 i=0
 while True:
 	for p,_ in processDict.items():
-		line = p.stdout.readline() 
+		line = p.stdout.readline()
+		print(">>>[PID:%s]CURRENT LINE:%s" %(p.pid,line))
 		if i%20==0:
-			print "[%s] Scanning [PID:%s]..." %(time.strftime(ISOTIMEFORMAT,time.localtime()),p.pid)
+			logger.debug("[%s] Scanning [PID:%s]..." %(time.strftime(ISOTIMEFORMAT,time.localtime()),p.pid))
 		if line != '' or p.poll() == None:# 进程还没有结束
 			#check the line
-			if line.find('IndexError: list index out of range')>=0:
+			
+			if line.find('IndexError: list index out of range')>=0 or line.find('Spider error processing <GET')>=0 or line.find('Traceback (most recent call last)')>=0:
 				processDict[p]=processDict[p]+1
 				logger.debug('Find an error with PID:%s, failure times:%s/%s' %(p.pid,processDict[p],MAX_FAILURE))
 				if processDict[p]>=MAX_FAILURE:
@@ -55,11 +55,11 @@ while True:
 					except OSError as e:
 						logger.error(e)
 					del processDict[p]
-					newP = subprocess.Popen("scrapy crawl amazon_cn",shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,preexec_fn=os.setsid)
+					newP = subprocess.Popen("echo 'Sleep a while before start new spider';sleep 1m;scrapy crawl amazon_cn",shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,preexec_fn=os.setsid)
 					processDict[newP] = 0
 					logger.info('Renew a process [PID:%s]' %newP.pid)
 		else:
-			pass
+			continue
 			'''
 			del processDict[p]
 			newP = subprocess.Popen("scrapy crawl amazon_cn",shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,preexec_fn=os.setsid)

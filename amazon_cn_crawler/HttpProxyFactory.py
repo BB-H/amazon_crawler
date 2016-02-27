@@ -68,7 +68,7 @@ class HttpProxyFactory(object):
 				urllib2.install_opener(opener)
 				req=urllib2.Request(HttpProxyFactory.TEST_PAGE_AMAZON)
 				req.add_header('Cache-Control', 'max-age=0')
-				response = urllib2.urlopen(req,timeout=1.5)
+				response = urllib2.urlopen(req,timeout=2.5)
 				html = response.read()
 				if html.find('id="nav-logo"')<0 and html.find("id='nav-logo'")<0: #amazon.cn login element
 					return
