@@ -44,33 +44,30 @@ class RandomUserAgentMiddleware(UserAgentMiddleware):
 
 
 class PhantomJSMiddleware(object):
-	phantomJSService = PhantomJSService()
+	#phantomJSService = PhantomJSService()
 
 	def __init__(self):
-		#self.proxyFactory = HttpProxyFactory.getHttpProxyFactory()
+		self.proxyFactory = HttpProxyFactory.getHttpProxyFactory()
+		self.proxy = self.proxyFactory.currentProxy
+		self.phantomJSService = PhantomJSService(self.proxy)
+		logging.info('[PID:%s] PhantomJSMiddleware initialized with proxy:%s' %(os.getpid(),self.proxy))
 		pass
 	
 	# overwrite process request  
 	def process_request(self, request, spider):
-		if request.meta.has_key('phantom'):# 
+		if request.meta.has_key('phantom') or request.meta.has_key('proxiedPhantom'):
 			logging.info('[PID:%s] PhantomJS Requesting: %s' %(os.getpid(),request.url))
-			#proxyinfo = request.meta['proxy']
-			if request.meta['phantom']:
-				if request.meta.has_key('phantom_proxy'):
-					proxy = request.meta['phantom_proxy'].strip()
-					content = self.phantomJSService.requestWithProxy(request.url,proxy)
-				else:
-					content = self.phantomJSService.requestByURL(request.url)
-			else:
+			if request.meta.has_key('phantom'):
 				content = self.phantomJSService.requestByURL(request.url)
+			else:
+				content = self.phantomJSService.requestWithProxy(request.url)
 			if content is None or content.strip()=="" or content == '<html><head></head><body></body></html>':# 
 				logging.debug("[PID:%s] PhantomJS Request failed!" %os.getpid())
 				return HtmlResponse(request.url, encoding = 'utf-8', status = 503, body = '')  
 			else:
 				logging.debug("[PID:%s]PhantomJS Request success!" %os.getpid())
 				return HtmlResponse(request.url, encoding = 'utf-8', status = 200, body = content)
- 
-
+	
 
 class ItemFilterMiddleware(object):
 	'''

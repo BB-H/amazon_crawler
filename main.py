@@ -6,7 +6,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import time
 
-SPIDER_AMOUNT = 6
+SPIDER_AMOUNT = 4
 MAX_FAILURE =3 
 processDict = {}
 ISOTIMEFORMAT='%Y-%m-%d %X'

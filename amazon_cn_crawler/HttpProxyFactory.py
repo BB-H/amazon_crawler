@@ -36,6 +36,7 @@ class HttpProxyFactory(object):
 	lock = threading.Lock()
 	proxyLock = threading.Lock()
 	__instance = None
+	
 
 	def __init__(self):
 		proxyFile = os.path.join(os.getcwd(),"amazon_cn_crawler","proxy.list")
@@ -56,6 +57,7 @@ class HttpProxyFactory(object):
 		pool.join()
 		#logging.debug("All accessible proxy is:"+str(len(HttpProxyFactory.validProxyList)))
 		print("Available proxies are %s" %len(HttpProxyFactory.validProxyList))
+		self.currentProxy = self.getRandomProxy()
 		
 	
 	
@@ -105,8 +107,8 @@ class HttpProxyFactory(object):
 			HttpProxyFactory.__instance = HttpProxyFactory()
 		HttpProxyFactory.lock.release()
 		return HttpProxyFactory.__instance
-
-
+	
+	
 if __name__ == '__main__':
 	#factory = HttpProxyFactory()
 	

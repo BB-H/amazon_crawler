@@ -33,7 +33,7 @@ class AmazonCnSpider(scrapy.Spider):
 		logging.info("All proxy amount is:%s" %self.proxyFactory.getValidProxyAmount())
 		if self.proxyFactory.getValidProxyAmount()>0:
 			self.proxyEnbaled = True
-			self.proxyinfo = self.proxyFactory.getRandomProxy()
+			self.proxyinfo = self.proxyFactory.currentProxy
 			self.proxyinfo="http://"+self.proxyinfo
 			logging.info("[PID:%s] Use Http proxy:%s" %(os.getpid(),self.proxyinfo))
 		else:
@@ -67,9 +67,10 @@ class AmazonCnSpider(scrapy.Spider):
 					continue
 				itemPageURL = self.TYPE_ITEM_PAGE+itemID
 				req = Request(itemPageURL,self.parseURL)
-				req.meta['phantom']="yes"
 				if self.proxyEnbaled:
-					req.meta['phantom_proxy']=self.proxyinfo
+					req.meta['proxiedPhantom']="yes"
+				else:
+					req.meta['phantom']="yes"
 				yield req
 			#2. get all list pages in current category if it's in the first page.
 			if resp.url.find("page=")<0:

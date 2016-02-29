@@ -3,15 +3,13 @@
 #from scrapy.http import HtmlResponse
 #from scrapy.http import Request
 import sys, os, logging, traceback, random
+from urllib2 import URLError
 from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 
 class PhantomJS(object):
 	
-	user_agent = (
-    "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.103 Safari/537.36"
-	)
 
 	user_agents = [
 				("Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.103 Safari/537.36"),
@@ -25,13 +23,35 @@ class PhantomJS(object):
 	#dcap["phantomjs.page.settings.userAgent"] = user_agent
 	dcap["phantomjs.page.settings.userAgent"] = random.choice(user_agents)
 	
-	def requestByURL(self,url):
-		if url is None or url.strip()=="":
-			return ""
+	def __init__(self,proxy):
+		self.proxy = proxy
+		#self.driver = self.getDriver()
+		#self.proxiedDriver = self.getProxiedDriver(proxy)
+		pass
+		
+	def getProxiedDriver(self, proxy):
+		service_args = [
+			'--proxy=%s' %proxy,
+			'--proxy-type=http',
+			'--load-images=false'
+			]
+		return webdriver.PhantomJS(executable_path = '/usr/local/bin/phantomjs',desired_capabilities=self.dcap,service_args=service_args,)
+	
+	def getDriver(self):
 		service_args = [
 			'--load-images=false'
 			]
 		driver = webdriver.PhantomJS(executable_path = '/usr/local/bin/phantomjs',desired_capabilities=self.dcap,service_args=service_args,)
+		return driver
+	
+	def __del__(self):
+		#self.proxiedDriver.quit()
+		#self.driver.quit()
+		pass
+		
+	
+	def requestByURL(self,url):
+		driver = self.getDriver()
 		try:
 			driver.get(url)
 			content = driver.page_source.encode('utf-8')
@@ -43,24 +63,19 @@ class PhantomJS(object):
 		finally:
 			driver.quit()
 
-	def requestWithProxy(self,url,proxyinfo):
-		service_args = [
-			'--proxy=%s' %proxyinfo,
-			'--proxy-type=http',
-			'--load-images=false'
-			]
-		myDriver = webdriver.PhantomJS(executable_path = '/usr/local/bin/phantomjs',desired_capabilities=self.dcap,service_args=service_args,)
+	def requestWithProxy(self,url):
+		proxiedDriver = self.getProxiedDriver(self.proxy)
 		try:
-			myDriver.get(url)
-			content = myDriver.page_source.encode('utf-8')
+			proxiedDriver.get(url)
+			content = proxiedDriver.page_source.encode('utf-8')
 			return content
 		except Exception as e: 
 			print e
 			errorStack = traceback.format_exc()
-			logging.error('[PID:%s] PhantomJS request exception with url(%s) and proxy(%s)! exception info:%s'%(os.getpid(),url,proxyinfo,errorStack))
+			logging.error('[PID:%s] PhantomJS request exception with url(%s) and proxy(%s)! exception info:%s'%(os.getpid(),url,self.proxy,errorStack))
 			return None
 		finally:
-			myDriver.quit()
+			proxiedDriver.quit()
 
 if __name__ == '__main__':
 	if len(sys.argv)>1:

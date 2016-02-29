@@ -28,30 +28,31 @@ ch.setFormatter(formatter)
 logger.addHandler(fh)  
 logger.addHandler(ch)  
 
-process_start_time = None
+process_start_time = datetime.datetime.now()
+error_times = 0
+
 def renewProcess(p):
+	global error_times,process_start_time
 	p.terminate()
 	p.wait()
 	try:
 		os.killpg(p.pid, signal.SIGTERM)
 	except OSError as e:
 		logger.error(e)
-	error_times = 0
 	p = subprocess.Popen("scrapy crawl amazon_cn",shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,preexec_fn=os.setsid)
+	error_times = 0
 	process_start_time = datetime.datetime.now()
 	return p
 
 
 #start = datetime.datetime.now()
 p = subprocess.Popen("scrapy crawl amazon_cn",shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,preexec_fn=os.setsid)
-process_start_time = datetime.datetime.now()
 logger.info('Open a spider[PID:%s]..' %(p.pid))
 
-error_times = 0
 i=0
 while True:
 	current = datetime.datetime.now()
-	if (current-process_start_time).seconds>=60*60*1:
+	if (current-process_start_time).seconds>=60*60*1: #一小时重启一次
 		logger.info('KILL a process [PID:%s] after an hour[%s]' %(p.pid,time.strftime(ISOTIMEFORMAT,time.localtime())))
 		p = renewProcess(p)
 		logger.info('Renew a process [PID:%s][%s]' %(p.pid,time.strftime(ISOTIMEFORMAT,time.localtime())))
@@ -62,7 +63,6 @@ while True:
 			logger.debug("[PID:%s] [%s]Scanning..." %(p.pid,time.strftime(ISOTIMEFORMAT,time.localtime())))
 		if line != '' or p.poll() == None:# 进程还没有结束
 			#check the line
-			
 			if line.find('IndexError: list index out of range')>=0:
 				error_times=error_times+1
 				logger.info('Find an error with PID:%s, failure times:%s/%s' %(p.pid,error_times,MAX_FAILURE))
@@ -70,12 +70,10 @@ while True:
 					logger.info('KILL a process [PID:%s] after failures [%s]' %(p.pid,time.strftime(ISOTIMEFORMAT,time.localtime())))
 					p = renewProcess(p)
 					logger.info('Renew a process [PID:%s][%s]' %(p.pid,time.strftime(ISOTIMEFORMAT,time.localtime())))
-			current = datetime.datetime.now()
-			
 		else:
 			logger.info("Process[PID:%s] closed from outside." %p.pid)
 			break
-	i+=1
-	if i>10000:
-		i=0
-logger.info("The END.")
+		i+=1
+		if i>10000:
+			i=0
+logger.info("[PID:%s] The END." %p.pid)
