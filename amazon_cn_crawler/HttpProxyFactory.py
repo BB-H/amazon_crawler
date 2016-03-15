@@ -14,31 +14,23 @@ class HttpProxyFactory(object):
 	TEST_PAGE_BING = "http://cn.bing.com/"
 	TEST_PAGE_AMAZON = "http://www.amazon.cn/gp/site-directory"
 	MAX_THREAD = 100
-	allProxySet=set([#This is just an example, allProxySet will be restructured from proxy.list file in __init__()
-		"23.94.37.50:3128",
-		#"121.193.143.249:80",
-		#"120.195.194.10:80",
-		#"120.195.194.149:80",
-		#"27.46.52.31:9797",
-		#"58.251.47.101:8081",
-		#"120.195.199.240:80",
-		#"120.195.198.6:80",
-		#"120.195.203.132:80",
-		#"218.92.227.165:29037",
-		#"120.195.192.83:80",
-		#"60.191.153.75:3128",
-		#"218.92.227.166:15275",
-		#"120.195.195.71:80",
-		#"110.73.1.241:8123",
-		"182.90.80.80:8123",
-		])
+	ENABLE_PROXY = True
+	allProxySet=set()
+	newProxyList = []
 	validProxyList = []
 	lock = threading.Lock()
 	proxyLock = threading.Lock()
+	refreshLock = threading.Lock()
 	__instance = None
 	
 
 	def __init__(self):
+		self.refreshProxies()
+		#logging.debug("All accessible proxy is:"+str(len(HttpProxyFactory.validProxyList)))
+		print("Available proxies are %s" %len(HttpProxyFactory.validProxyList))
+		#self.currentProxy = self.getRandomProxy()
+		
+	def refreshProxies(self):
 		proxyFile = os.path.join(os.getcwd(),"amazon_cn_crawler","proxy.list")
 		if os.path.isfile(proxyFile):
 			f = file(proxyFile, 'r')
@@ -49,17 +41,18 @@ class HttpProxyFactory(object):
 					HttpProxyFactory.allProxySet.add(line)
 			f.close()
 		print("All proxies are:%s" % len(HttpProxyFactory.allProxySet))
-		threadAmount = max(len(HttpProxyFactory.allProxySet)/5,2)
-		threadAmount = min(threadAmount,HttpProxyFactory.MAX_THREAD)
-		pool = ThreadPool(threadAmount)
-		pool.map(self.checkProxyAvailable,HttpProxyFactory.allProxySet)
-		pool.close() 
-		pool.join()
-		#logging.debug("All accessible proxy is:"+str(len(HttpProxyFactory.validProxyList)))
-		print("Available proxies are %s" %len(HttpProxyFactory.validProxyList))
-		self.currentProxy = self.getRandomProxy()
+		HttpProxyFactory.newProxyList = []
+		if HttpProxyFactory.allProxySet:
+			threadAmount = max(len(HttpProxyFactory.allProxySet)/5,2)
+			threadAmount = min(threadAmount,HttpProxyFactory.MAX_THREAD)
+			pool = ThreadPool(threadAmount)
+			pool.map(self.checkProxyAvailable,HttpProxyFactory.allProxySet)
+			pool.close() 
+			pool.join()
+		HttpProxyFactory.proxyLock.acquire()
+		HttpProxyFactory.validProxyList = HttpProxyFactory.newProxyList
+		HttpProxyFactory.proxyLock.release()
 		
-	
 	
 	def checkProxyAvailable(self,ipAndPort):
 		try:
@@ -78,10 +71,10 @@ class HttpProxyFactory(object):
 					#return
 				#print("Success! round.%s :%s" %(i,ipAndPort))
 				time.sleep(2)
-			HttpProxyFactory.proxyLock.acquire()
+			HttpProxyFactory.refreshLock.acquire()
 			print '[VALID] %s' % ipAndPort
-			HttpProxyFactory.validProxyList.append(ipAndPort)
-			HttpProxyFactory.proxyLock.release()
+			HttpProxyFactory.newProxyList.append(ipAndPort)
+			HttpProxyFactory.refreshLock.release()
 		except urllib2.HTTPError:
 			print '[INVALID] %s' % ipAndPort
 		except Exception:
@@ -92,7 +85,7 @@ class HttpProxyFactory(object):
 		HttpProxyFactory.proxyLock.acquire()
 		if len(HttpProxyFactory.validProxyList)>0:
 			proxy = random.choice(HttpProxyFactory.validProxyList)
-		logging.debug("Get a random Http proxy(1/%s):%s" %(len(HttpProxyFactory.validProxyList),str(proxy)))
+			logging.debug("Get a random Http proxy(1/%s):%s" %(len(HttpProxyFactory.validProxyList),str(proxy)))
 		HttpProxyFactory.proxyLock.release()
 		return proxy
 
@@ -107,6 +100,13 @@ class HttpProxyFactory(object):
 			HttpProxyFactory.__instance = HttpProxyFactory()
 		HttpProxyFactory.lock.release()
 		return HttpProxyFactory.__instance
+	
+	def wrapWithProxy(self,request):
+		if not HttpProxyFactory.ENABLE_PROXY:
+			return
+		proxy = self.getRandomProxy()
+		if proxy:
+			request.meta['proxy'] = "http://"+proxy
 	
 	
 if __name__ == '__main__':

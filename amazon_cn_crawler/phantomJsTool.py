@@ -23,8 +23,8 @@ class PhantomJS(object):
 	#dcap["phantomjs.page.settings.userAgent"] = user_agent
 	dcap["phantomjs.page.settings.userAgent"] = random.choice(user_agents)
 	
-	def __init__(self,proxy):
-		self.proxy = proxy
+	def __init__(self):
+		#self.proxy = proxy
 		#self.driver = self.getDriver()
 		#self.proxiedDriver = self.getProxiedDriver(proxy)
 		pass
@@ -63,8 +63,8 @@ class PhantomJS(object):
 		finally:
 			driver.quit()
 
-	def requestWithProxy(self,url):
-		proxiedDriver = self.getProxiedDriver(self.proxy)
+	def requestWithProxy(self,url,proxy):
+		proxiedDriver = self.getProxiedDriver(proxy)
 		try:
 			proxiedDriver.get(url)
 			content = proxiedDriver.page_source.encode('utf-8')
@@ -72,7 +72,7 @@ class PhantomJS(object):
 		except Exception as e: 
 			print e
 			errorStack = traceback.format_exc()
-			logging.error('[PID:%s] PhantomJS request exception with url(%s) and proxy(%s)! exception info:%s'%(os.getpid(),url,self.proxy,errorStack))
+			logging.error('[PID:%s] PhantomJS request exception with url(%s) and proxy(%s)! exception info:%s'%(os.getpid(),url,proxy,errorStack))
 			return None
 		finally:
 			proxiedDriver.quit()

@@ -31,6 +31,7 @@ class AmazonCnSpider(scrapy.Spider):
 		self.pattern_categoryID = re.compile("node=[0-9]+")
 		self.pattern_bookWrapper = re.compile("《.+》")
 		logging.info("All proxy amount is:%s" %self.proxyFactory.getValidProxyAmount())
+		'''
 		if self.proxyFactory.getValidProxyAmount()>0:
 			self.proxyEnbaled = True
 			self.proxyinfo = self.proxyFactory.currentProxy
@@ -38,6 +39,7 @@ class AmazonCnSpider(scrapy.Spider):
 			logging.info("[PID:%s] Use Http proxy:%s" %(os.getpid(),self.proxyinfo))
 		else:
 			self.proxyEnbaled = False
+		'''
 	
 	def parse(self, response):
 		resp=response
@@ -52,8 +54,7 @@ class AmazonCnSpider(scrapy.Spider):
 				continue
 			listPageURL = "%s?node=%s" %(self.TYPE_LIST_PAGE,categoryID)
 			req = Request(listPageURL,self.parseURL)
-			if self.proxyEnbaled:
-				req.meta['proxy'] = self.proxyinfo
+			self.proxyFactory.wrapWithProxy(req)
 			yield req
 	
 	def parseURL(self,response):
@@ -67,10 +68,8 @@ class AmazonCnSpider(scrapy.Spider):
 					continue
 				itemPageURL = self.TYPE_ITEM_PAGE+itemID
 				req = Request(itemPageURL,self.parseURL)
-				if self.proxyEnbaled:
-					req.meta['proxiedPhantom']="yes"
-				else:
-					req.meta['phantom']="yes"
+				self.proxyFactory.wrapWithProxy(req)
+				req.meta['phantom']="yes"
 				yield req
 			#2. get all list pages in current category if it's in the first page.
 			if resp.url.find("page=")<0:
@@ -80,8 +79,7 @@ class AmazonCnSpider(scrapy.Spider):
 					for pageNum in range(2,int(maxPage)+1):
 						nextPageURL = resp.url+"&page="+str(pageNum)
 						req = Request(nextPageURL,self.parseURL)
-						if self.proxyEnbaled:
-							req.meta['proxy'] = self.proxyinfo
+						self.proxyFactory.wrapWithProxy(req)
 						yield req
 		if resp.url.startswith(self.TYPE_ITEM_PAGE):
 			name =""
