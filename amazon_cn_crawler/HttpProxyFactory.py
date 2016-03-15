@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import socket, time, thread, logging, os
-import urllib2, threading
+import urllib2
 import threading
 import random
 import time
@@ -29,7 +29,17 @@ class HttpProxyFactory(object):
 		#logging.debug("All accessible proxy is:"+str(len(HttpProxyFactory.validProxyList)))
 		print("Available proxies are %s" %len(HttpProxyFactory.validProxyList))
 		#self.currentProxy = self.getRandomProxy()
+		#start a timer for refresh proxies
+		timer = threading.Timer(60*3, self.refreshScheduler)
+		timer.start()
 		
+	def refreshScheduler(self):
+		logging.info("[PID:%s] Refreshing proxy list..." %os.getpid())
+		self.refreshProxies()
+		timer = threading.Timer(60*10, self.refreshScheduler)
+		timer.start()
+	
+	
 	def refreshProxies(self):
 		proxyFile = os.path.join(os.getcwd(),"amazon_cn_crawler","proxy.list")
 		if os.path.isfile(proxyFile):
